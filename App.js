@@ -1,6 +1,12 @@
 import React, { Component } from 'react';
-import { Text, View, StyleSheet,Image,Dimensions, ImageEditor } from 'react-native';
+import { Text, View, StyleSheet,Image,Dimensions, ImageEditor, TouchableOpacity , LayoutAnimation} from 'react-native';
 import { Constants } from 'expo';
+
+
+import { UIManager } from 'react-native';
+
+UIManager.setLayoutAnimationEnabledExperimental && UIManager.setLayoutAnimationEnabledExperimental(true);
+
 
 const source = require("./assets/image.jpg");
 
@@ -12,7 +18,8 @@ function cropImagePromise(uri,config,i,j){
       let obj ={
         x:i,
         y:j,
-        uri
+        uri:uri,
+        isNULL:i===2&&j===2
       }
       resolve(obj);
     },function(err){
@@ -43,19 +50,20 @@ export default class App extends Component {
     super(props);
     this.state = {
       imgInfo:{},
-      thumbnailArr:[],
+      originalArr:[],
+      sortedArr:[],
       imgLoadError:false
     }
   }
 
   componentDidMount(){
     let imgInfo = Image.resolveAssetSource(source);
-    console.log(imgInfo)
     createImages(imgInfo).then(values=>{
       console.log(values);
       this.setState({
         imgInfo:imgInfo,
-        thumbnailArr: values,
+        originalArr: values,
+        sortedArr: values,
       })
     }).catch(err=>{
       this.setState({
@@ -64,6 +72,33 @@ export default class App extends Component {
     })
   }
 
+  renderItem(item){
+    return (
+      <View key={item.x + "" + item.y}>
+        {!item.isNULL?(<Image source={{uri:item.uri}} style={styles.image}/>):(<View style={styles.blankImage} />)}
+      </View>
+    )
+  }
+
+  goUp(){
+    let currentIndex = this.state.sortedArr.findIndex(item=> item.isNULL);
+    let topIndex = currentIndex - 3 ;
+    console.log(currentIndex,topIndex);
+    if(topIndex < 0 ){
+      return;
+    }else{
+      this.exchangeIndex(currentIndex,topIndex);
+    }
+  }
+
+  exchangeIndex(from,to){
+    let arr = Array.from(this.state.sortedArr);
+    arr[from] = arr.splice(to,1,arr[from])[0];
+    LayoutAnimation.easeInEaseOut();
+    this.setState({
+      sortedArr:arr
+    })
+  }
 
   render() {
     return (
@@ -71,20 +106,25 @@ export default class App extends Component {
         {/*<Image source={source} style={styles.image} /> */}
         <View style={styles.board} >
           <View style={styles.row}>
-            {this.state.thumbnailArr.slice(0,3).map(({uri,x,y},index) => (
-              <Image source={{uri:uri}} style={styles.image} key={x+" "+y} />
+            {this.state.sortedArr.slice(0,3).map((item) => (
+              this.renderItem(item)
               ))}
           </View>
           <View style={styles.row}>
-            {this.state.thumbnailArr.slice(3,6).map(({uri,x,y},index) => (
-              <Image source={{uri:uri}} style={styles.image} key={x+" "+y} />
+            {this.state.sortedArr.slice(3,6).map((item) => (
+              this.renderItem(item)
               ))}
           </View>
           <View style={styles.row}>
-            {this.state.thumbnailArr.slice(6,9).map(({uri,x,y},index) => (
-              <Image source={{uri:uri}} style={styles.image} key={x+" "+y} />
+            {this.state.sortedArr.slice(6,9).map((item) => (
+              this.renderItem(item)
               ))}
           </View>
+        </View>
+        <View>
+          <TouchableOpacity onPress={this.goUp.bind(this)} style={styles.btn}>
+            <Text>UP</Text>
+          </TouchableOpacity>
         </View>
       </View>
     );
@@ -103,6 +143,11 @@ const styles = StyleSheet.create({
     width:(winWidth-5)/3,
     height:(winWidth-5)/3
   },
+  blankImage:{
+    width:(winWidth-5)/3,
+    height:(winWidth-5)/3,
+    backgroundColor:"#ccc"
+  },
   board:{
     justifyContent:"space-between",
     height:winWidth
@@ -110,5 +155,12 @@ const styles = StyleSheet.create({
   row:{
     flexDirection:"row",
     justifyContent:"space-between",
+  },
+  btn:{
+    width:50,
+    height:30,
+    alignItems:"center",
+    justifyContent:"center",
+    backgroundColor:"gray"
   }
 });
