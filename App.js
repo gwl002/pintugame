@@ -1,7 +1,7 @@
 import React, { Component } from 'react';
 import { Text, View, StyleSheet,Image,Dimensions, ImageEditor, TouchableOpacity , LayoutAnimation} from 'react-native';
 import { Constants } from 'expo';
-
+import { PanGestureHandler,State } from 'react-native-gesture-handler'
 
 import { UIManager } from 'react-native';
 
@@ -72,24 +72,58 @@ export default class App extends Component {
     })
   }
 
-  renderItem(item){
+  handleSwipe(index,{nativeEvent}){
+    if(nativeEvent.state === State.END){
+      let { translationX, translationY } = nativeEvent;
+      if(Math.abs(translationX) > Math.abs(translationY) && translationX < 0){
+        this.slideImage(index,"left");
+      }else if(Math.abs(translationX) > Math.abs(translationY) && translationX > 0){
+        this.slideImage(index,"right");
+      }else if(Math.abs(translationX) < Math.abs(translationY) && translationY > 0){
+        this.slideImage(index,"down");
+      }else if(Math.abs(translationX) < Math.abs(translationY) && translationY < 0){
+        this.slideImage(index,"up")
+      }
+    }
+  }
+
+  slideImage(index,direction){
+    let currentIndex = this.state.sortedArr.findIndex(item=> item.isNULL);
+    if(this.canMove(index,currentIndex,direction)){
+      this.exchangeIndex(index,currentIndex)
+    }
+  }
+
+  canMove(index,currentIndex,direction){
+    if(direction === "up" && index === currentIndex + 3 && currentIndex < 6){
+      return true
+    }
+    else if(direction === "down" && index === currentIndex - 3 && index < 6){
+      return true
+    }
+    else if(direction === "right" && index === currentIndex -1 && index%3 !== 2){
+      return true
+    }
+    else if(direction === "left" && index === currentIndex + 1 && index%3 !== 0){
+      return true
+    }
+    return false;
+  }
+
+  renderItem(item,index){
     return (
-      <View key={item.x + "" + item.y}>
-        {!item.isNULL?(<Image source={{uri:item.uri}} style={styles.image}/>):(<View style={styles.blankImage} />)}
-      </View>
+      <PanGestureHandler
+        key={item.x + "" + item.y}
+        onGestureEvent={({nativeEvent})=>{}}
+        onHandlerStateChange={this.handleSwipe.bind(this,index)}
+      >
+        <View>
+          {!item.isNULL?(<Image source={{uri:item.uri}} style={styles.image}/>):(<View style={styles.blankImage} />)}
+        </View>
+      </PanGestureHandler>
     )
   }
 
-  goUp(){
-    let currentIndex = this.state.sortedArr.findIndex(item=> item.isNULL);
-    let topIndex = currentIndex - 3 ;
-    console.log(currentIndex,topIndex);
-    if(topIndex < 0 ){
-      return;
-    }else{
-      this.exchangeIndex(currentIndex,topIndex);
-    }
-  }
 
   exchangeIndex(from,to){
     let arr = Array.from(this.state.sortedArr);
@@ -106,25 +140,20 @@ export default class App extends Component {
         {/*<Image source={source} style={styles.image} /> */}
         <View style={styles.board} >
           <View style={styles.row}>
-            {this.state.sortedArr.slice(0,3).map((item) => (
-              this.renderItem(item)
+            {this.state.sortedArr.slice(0,3).map((item,index) => (
+              this.renderItem(item,index)
               ))}
           </View>
           <View style={styles.row}>
-            {this.state.sortedArr.slice(3,6).map((item) => (
-              this.renderItem(item)
+            {this.state.sortedArr.slice(3,6).map((item,index) => (
+              this.renderItem(item,index+3)
               ))}
           </View>
           <View style={styles.row}>
-            {this.state.sortedArr.slice(6,9).map((item) => (
-              this.renderItem(item)
+            {this.state.sortedArr.slice(6,9).map((item,index) => (
+              this.renderItem(item,index+6)
               ))}
           </View>
-        </View>
-        <View>
-          <TouchableOpacity onPress={this.goUp.bind(this)} style={styles.btn}>
-            <Text>UP</Text>
-          </TouchableOpacity>
         </View>
       </View>
     );
