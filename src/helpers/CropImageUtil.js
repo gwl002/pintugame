@@ -13,28 +13,35 @@ export function getUrlFromLocalImageSource(source){
 
 export function getImageSize(uri){
 	return new Promise((resolve,reject)=>{
-		Image.getSize({
-			uri:uri,
-			success:({width,height})=>{
+		Image.getSize(
+			uri,
+			(width,height)=>{
 				resolve({
 					width,
 					height
 				})
 			},
-			fail:(err)=>{
+			(err)=>{
 				reject(err)
 			}
-		})
+		)
 	})
 }
 
-export function cropImagePromise(uri,config,x,y){
+export function cropImagePromise(uri,config,x,y,row,column,thumbnailWidth,thumbnailHeight){
 	return new Promise((resolve,reject)=>{
 	  ImageEditor.cropImage(uri,config,function(uri){
 	    let obj ={
 	      x:x,
 	      y:y,
 	      uri:uri,
+	      index:column*y+x,
+	      curIndex:column*y+x,
+	      fullWidth:winWidth/column,
+	      fullHeight:winWidth/column*(thumbnailHeight/thumbnailWidth),
+	      originalWidth:thumbnailWidth,
+	      originalHeight:thumbnailHeight,
+	      isNULL:x===column-1&&y===row-1
 	    }
 	    resolve(obj);
 	  },function(err){
@@ -45,7 +52,7 @@ export function cropImagePromise(uri,config,x,y){
 
 
 export async function createCropImageList(uri,row,column){
-	let {width:imgWidth,height:imgHeight} = getImageSize(uri);
+	let {width:imgWidth,height:imgHeight} = await getImageSize(uri);
 	let thumbnailWidth = imgWidth/column;
 	let thumbnailHeight = imgHeight/row;
 	let promiseArr = [];
@@ -61,8 +68,9 @@ export async function createCropImageList(uri,row,column){
 					height:thumbnailHeight
 				}
 			}
+			promiseArr.push(cropImagePromise(uri,config,i,j,row,column,thumbnailWidth,thumbnailHeight))
 		}
-		promiseArr.push(cropImagePromise(uri,config,i,j))
+		
 	}
 	return Promise.all(promiseArr);
 }
