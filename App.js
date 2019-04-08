@@ -17,28 +17,21 @@ const winWidth = Dimensions.get("window").width;
 class Item extends Component{
   constructor(props){
     super(props);
-    this.state = {
-      curIndex: props.item.curIndex
-    }
   }
 
   componentDidMount(){
-    // console.log(this.props.item,"mount")
+    console.log(this.props.item,"mount")
   }
 
   shouldComponentUpdate(nextProps,nextState){
-    if(nextProps.item.curIndex === this.state.curIndex){
+    if(nextProps.item.curIndex === this.props.item.curIndex){
        return false;
     }
     return true;
   }
 
   componentDidUpdate(){
-    if(this.state.curIndex !== this.props.item.curIndex){
-      this.setState({
-        curIndex: this.props.item.curIndex
-      })
-    }
+    console.log("updated ",this.props.item)
   }
 
   render(){
@@ -107,7 +100,7 @@ export default class App extends Component {
 
   handleSwipe(item,{nativeEvent}){
     if(nativeEvent.state === State.END){
-      console.log(item,"swipe")
+      // console.log(item,"swipe")
       let { translationX, translationY } = nativeEvent;
       if(Math.abs(translationX) > Math.abs(translationY) && translationX < 0){
         this.slideImage(item,"left");
@@ -123,15 +116,17 @@ export default class App extends Component {
 
   slideImage(item,direction){
     let arr = Array.from(this.state.sortedArr);
-    let arr2  = [...this.state.sortedArr];
-    let blankItem = arr.find((it)=>{
+    let blankIndex= arr.findIndex((it)=>{
       return it.isNULL
     });
-    let blankIndex = blankItem.curIndex;
-    let itemIndex = item.curIndex;
-    if(this.canMove(itemIndex,blankIndex,direction)){
-      blankItem.curIndex = itemIndex;
-      item.curIndex = blankIndex;
+    let itemIndex = arr.findIndex((it)=>{
+      return it.index === item.index;
+    })
+    let blankCurIndex = arr[blankIndex].curIndex;
+    let itemCurIndex = item.curIndex;
+    if(this.canMove(itemCurIndex,blankCurIndex,direction)){
+      arr[blankIndex] = Object.assign({},arr[blankIndex],{curIndex:itemCurIndex});
+      arr[itemIndex] = Object.assign({},arr[itemIndex],{curIndex:blankCurIndex});
       this.setState({
         sortedArr:arr
       });
@@ -159,17 +154,7 @@ export default class App extends Component {
     return <Item item={item} columnNum={this.column} handleSwipe={this.handleSwipe.bind(this,item)} key={item.x+" "+item.y}/>
   }
 
-
-  exchangeIndex(from,to){
-    let arr = Array.from(this.state.sortedArr);
-    LayoutAnimation.easeInEaseOut();
-    this.setState({
-      sortedArr:arr
-    })
-  }
-
   render() {
-    console.log(this.state.sortedArr);
     return (
       <View style={styles.container}>
         {/*<Image source={source} style={styles.image} /> */}
